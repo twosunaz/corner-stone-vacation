@@ -8,39 +8,44 @@ export async function POST(req: Request) {
     const body = await req.json();
     console.log("📨 n8n payload received:", body);
 
-    const { customer, assistantOverrides } = body;
+    const { assistantId, phoneNumberId, customer, assistantOverrides } = body;
 
-    if (!customer?.number) {
-      console.error("❌ Missing customer phone number");
+    if (!assistantId || !phoneNumberId || !customer?.number) {
+      console.error("❌ Missing required fields");
       return NextResponse.json(
-        { success: false, error: "Missing customer phone number" },
+        { success: false, error: "Missing assistantId, phoneNumberId, or customer number" },
         { status: 400 }
       );
     }
 
-    // ✅ Fixed assistant ID from your dashboard
-    const assistantId = "bf9bd7a4-e51f-4292-9573-8b09af6bd61f";
+    const vapiApiKey = process.env.VAPI_API_KEY;
+    if (!vapiApiKey) {
+      console.error("❌ Missing VAPI_API_KEY");
+      return NextResponse.json(
+        { success: false, error: "VAPI_API_KEY is not configured" },
+        { status: 500 }
+      );
+    }
 
-    // ✅ Prepare variableValues for Vapi
-    const variableValues = {
-      firstName: assistantOverrides?.variableValues?.firstName ?? "",
-      lastName: assistantOverrides?.variableValues?.lastName ?? "",
-      email: assistantOverrides?.variableValues?.email ?? "",
-      formSource: assistantOverrides?.variableValues?.formSource ?? "",
-      customerNumber: customer.number
+    // Build request payload for calls/create
+    const payload: any = {
+      assistantId,
+      phoneNumberId,
+      customer: { number: customer.number },
     };
 
-    // --- Call Vapi REST API directly ---
-    const response = await fetch("https://api.vapi.ai/v1/assistants/start", {
+    // Optional: add variable values if provided
+    if (assistantOverrides?.variableValues) {
+      payload.variableValues = assistantOverrides.variableValues;
+    }
+
+    const response = await fetch("https://api.vapi.ai/v1/calls/create", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.VAPI_API_KEY}`, // must be set in Vercel
+        Authorization: `Bearer ${vapiApiKey}`,
       },
-      body: JSON.stringify({
-        assistantId,
-        variableValues
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json();
@@ -53,14 +58,11 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("📞 Vapi call started via REST API:", data);
+    console.log("📞 Vapi call created:", data);
 
-    return NextResponse.json(
-      { success: true, result: data },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("❌ Vapi webhook error:", error);
+    return NextResponse.json({ success: true, result: data }, { status: 200 });
+  } catch (err) {
+    console.error("❌ Vapi webhook error:", err);
     return NextResponse.json(
       { success: false, error: "Internal server error" },
       { status: 500 }
