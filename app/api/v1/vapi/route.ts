@@ -1,4 +1,4 @@
-// /app/api/v1/vapi/route.ts
+// app/api/v1/vapi/route.ts
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -27,19 +27,21 @@ export async function POST(req: Request) {
       );
     }
 
-    // Build request payload for calls/create
+    // Build payload according to Vapi Create Call API
     const payload: any = {
       assistantId,
       phoneNumberId,
       customer: { number: customer.number },
     };
 
-    // Optional: add variable values if provided
+    // Optional: include variable overrides
     if (assistantOverrides?.variableValues) {
-      payload.variableValues = assistantOverrides.variableValues;
+      payload.assistantOverrides = {
+        variableValues: assistantOverrides.variableValues,
+      };
     }
 
-    const response = await fetch("https://api.vapi.ai/v1/calls/create", {
+    const response = await fetch("https://api.vapi.ai/call", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -58,11 +60,11 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("📞 Vapi call created:", data);
+    console.log("📞 Vapi call created successfully:", data);
 
     return NextResponse.json({ success: true, result: data }, { status: 200 });
-  } catch (err) {
-    console.error("❌ Vapi webhook error:", err);
+  } catch (error) {
+    console.error("❌ Vapi webhook error:", error);
     return NextResponse.json(
       { success: false, error: "Internal server error" },
       { status: 500 }
