@@ -4,13 +4,13 @@ export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const customerNumber = "15204445252";
-    const extractedEmail = "vibecommunitypublishing@gmail.com"; // replace with clean email
+    const customerNumber = "5204445252";
+    const extractedEmail = "vibecommunitypublishing@gmail.com"; // test email
 
     let contactId: string | null = null;
 
-    // --- Search for existing contact using email first, then phone ---
-    if (extractedEmail) {
+    // --- Try to find contact by email ---
+    if (extractedEmail && extractedEmail.includes("@")) {
       const searchRes = await fetch(
         "https://services.leadconnectorhq.com/contacts/search",
         {
@@ -28,7 +28,7 @@ export async function GET() {
       contactId = searchData?.[0]?.id || null;
     }
 
-    // fallback: search by phone if no contact found
+    // --- If no contact, search by phone ---
     if (!contactId) {
       const searchRes = await fetch(
         "https://services.leadconnectorhq.com/contacts/search",
@@ -47,8 +47,15 @@ export async function GET() {
       contactId = searchData?.[0]?.id || null;
     }
 
-    // --- Create a contact if still not found ---
+    // --- Create contact if none found ---
     if (!contactId) {
+      const payload: any = {
+        firstName: "Unknown",
+        lastName: "User",
+        phone: customerNumber,
+      };
+      if (extractedEmail && extractedEmail.includes("@")) payload.email = extractedEmail;
+
       const createRes = await fetch(
         "https://services.leadconnectorhq.com/contacts",
         {
@@ -59,12 +66,7 @@ export async function GET() {
             Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
             Version: "2021-04-15",
           },
-          body: JSON.stringify({
-            firstName: "Unknown",
-            lastName: "User",
-            phone: customerNumber,
-            email: extractedEmail || undefined, // optional
-          }),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -73,12 +75,10 @@ export async function GET() {
     }
 
     if (!contactId) {
-      throw new Error(
-        "Failed to get or create a valid contactId. Ensure email/phone are valid."
-      );
+      throw new Error("Failed to get or create a valid contactId. Ensure phone is valid.");
     }
 
-    // --- Call GHL appointments API ---
+    // --- Book appointment ---
     const startTime = new Date("2026-01-19T03:30:00+05:30").toISOString();
     const endTime = new Date("2026-01-19T04:30:00+05:30").toISOString();
 
