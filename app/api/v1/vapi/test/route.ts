@@ -30,7 +30,7 @@ export async function GET() {
             contactId,
             startTime,
             endTime,
-            assignedUserId: "0007BWpSzSwfiuSl0tR2",
+            assignedUserId: "oSoFaxmr74kOo8jYNiBl",
     }),
       }
     );
