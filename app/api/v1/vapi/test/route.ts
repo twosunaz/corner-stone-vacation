@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-
+import { normalizeUSNumber } from "@/util/normalizeNumber";
 export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const customerNumber = "+15204445252"; // ✅ include +1 for US number
+    const customerNumber = normalizeUSNumber("5204445252"); // ✅ include +1 for US number
     const extractedEmail = "vibecommunitypublishing@gmail.com"; // test email
 
     let contactId: string | null = null;
