@@ -5,27 +5,49 @@ export const runtime = "nodejs";
 export async function GET() {
   try {
     const customerNumber = "15204445252";
-    const extractedEmail = "vibecommunitypublishing@gmail.com";
+    const extractedEmail = "vibecommunitypublishing@gmail.com"; // replace with clean email
 
-    // --- Search for existing contact ---
-    const searchRes = await fetch(
-      "https://services.leadconnectorhq.com/contacts/search",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
-          Version: "2021-04-15",
-        },
-        body: JSON.stringify({ email: extractedEmail, phone: customerNumber }),
-      }
-    );
+    let contactId: string | null = null;
 
-    const searchData = await searchRes.json();
-    let contactId = searchData?.[0]?.id;
+    // --- Search for existing contact using email first, then phone ---
+    if (extractedEmail) {
+      const searchRes = await fetch(
+        "https://services.leadconnectorhq.com/contacts/search",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
+            Version: "2021-04-15",
+          },
+          body: JSON.stringify({ email: extractedEmail }),
+        }
+      );
+      const searchData = await searchRes.json();
+      contactId = searchData?.[0]?.id || null;
+    }
 
-    // --- Create contact if none found OR incomplete ---
+    // fallback: search by phone if no contact found
+    if (!contactId) {
+      const searchRes = await fetch(
+        "https://services.leadconnectorhq.com/contacts/search",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
+            Version: "2021-04-15",
+          },
+          body: JSON.stringify({ phone: customerNumber }),
+        }
+      );
+      const searchData = await searchRes.json();
+      contactId = searchData?.[0]?.id || null;
+    }
+
+    // --- Create a contact if still not found ---
     if (!contactId) {
       const createRes = await fetch(
         "https://services.leadconnectorhq.com/contacts",
@@ -41,17 +63,19 @@ export async function GET() {
             firstName: "Unknown",
             lastName: "User",
             phone: customerNumber,
-            email: extractedEmail || undefined,
+            email: extractedEmail || undefined, // optional
           }),
         }
       );
 
       const createData = await createRes.json();
-      contactId = createData.id;
+      contactId = createData?.id || null;
     }
 
     if (!contactId) {
-      throw new Error("Failed to get or create a valid contactId");
+      throw new Error(
+        "Failed to get or create a valid contactId. Ensure email/phone are valid."
+      );
     }
 
     // --- Call GHL appointments API ---
@@ -91,9 +115,11 @@ export async function GET() {
     console.log("✅ GHL appointment created:", ghlData);
 
     return NextResponse.json({ success: true, ghlData });
-
   } catch (error) {
     console.error("❌ Webhook error:", error);
-    return NextResponse.json({ success: false, error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: (error as any).message || "Internal server error" },
+      { status: 500 }
+    );
   }
 }
