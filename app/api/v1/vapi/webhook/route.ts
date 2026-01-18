@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 
     const transcript: string = payload.message.artifact?.transcript || "";
     const customerNumber: string = payload.message.customer?.number;
-
+    
     if (!customerNumber) {
       console.error("❌ Missing customer number");
       return NextResponse.json({ success: false, error: "Missing customer number" }, { status: 400 });
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
           appointmentStatus: "confirmed",
           contact: {
             phone: customerNumber,
-            email: extractedEmail || undefined,
+            email: extractedEmail || customerNumber,
           },
         }),
       }
