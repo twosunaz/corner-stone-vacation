@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import * as chrono from "chrono-node";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-    try {
-      
+  try {
     const customerNumber = "15204445252";
     const extractedEmail = "vibecommunitypublishing@gmail.com";
 
@@ -20,17 +18,14 @@ export async function GET() {
           Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
           Version: "2021-04-15",
         },
-        body: JSON.stringify({
-          email: extractedEmail, // optional
-          phone: customerNumber, // optional
-        }),
+        body: JSON.stringify({ email: extractedEmail, phone: customerNumber }),
       }
     );
 
     const searchData = await searchRes.json();
     let contactId = searchData?.[0]?.id;
 
-    // --- Create contact if none found ---
+    // --- Create contact if none found OR incomplete ---
     if (!contactId) {
       const createRes = await fetch(
         "https://services.leadconnectorhq.com/contacts",
@@ -44,6 +39,7 @@ export async function GET() {
           },
           body: JSON.stringify({
             firstName: "Unknown",
+            lastName: "User",
             phone: customerNumber,
             email: extractedEmail || undefined,
           }),
@@ -54,7 +50,14 @@ export async function GET() {
       contactId = createData.id;
     }
 
+    if (!contactId) {
+      throw new Error("Failed to get or create a valid contactId");
+    }
+
     // --- Call GHL appointments API ---
+    const startTime = new Date("2026-01-19T03:30:00+05:30").toISOString();
+    const endTime = new Date("2026-01-19T04:30:00+05:30").toISOString();
+
     const res = await fetch(
       "https://services.leadconnectorhq.com/calendars/events/appointments",
       {
@@ -71,9 +74,9 @@ export async function GET() {
           address: "Zoom",
           calendarId: process.env.GHL_CALENDAR_ID,
           locationId: "VRejswos7T1F1YAC8P1t",
-          contactId: contactId,
-          startTime: "2026-01-19T03:30:00+05:30",
-          endTime: "2026-01-19T04:30:00+05:30"
+          contactId,
+          startTime,
+          endTime,
         }),
       }
     );
@@ -87,10 +90,10 @@ export async function GET() {
     const ghlData = JSON.parse(text);
     console.log("✅ GHL appointment created:", ghlData);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, ghlData });
 
   } catch (error) {
     console.error("❌ Webhook error:", error);
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || "Internal server error" }, { status: 500 });
   }
 }
