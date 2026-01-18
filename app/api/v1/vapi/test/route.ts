@@ -21,15 +21,16 @@ export async function GET() {
           Version: "2021-04-15",
         },
         body: JSON.stringify({
-          title: "Scheduled via Vapi AI",
-          appointmentStatus: "confirmed",
-          address: "Zoom",
-          calendarId: process.env.GHL_CALENDAR_ID,
-          locationId: "VRejswos7T1F1YAC8P1t",
-          contactId,
-          startTime,
-          endTime,
-        }),
+        title: "Scheduled via Vapi AI",
+        appointmentStatus: "confirmed",
+        ignoreFreeSlotValidation: true ,// <-- bypasses the slot check
+        address: "Zoom",
+        calendarId: process.env.GHL_CALENDAR_ID,
+        locationId: "VRejswos7T1F1YAC8P1t",
+        contactId,
+        startTime,
+        endTime,
+    }),
       }
     );
 
