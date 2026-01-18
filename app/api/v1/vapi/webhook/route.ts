@@ -52,6 +52,47 @@ export async function POST(req: Request) {
     const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
     const emailMatch = transcript.match(emailRegex);
     const extractedEmail = emailMatch ? emailMatch[0] : undefined;
+    const searchRes = await fetch(
+    "https://services.leadconnectorhq.com/contacts/search",
+    {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
+        Version: "2021-04-15",
+        },
+        body: JSON.stringify({
+        email: extractedEmail, // optional
+        phone: customerNumber, // optional
+        }),
+    }
+    );
+
+    const searchData = await searchRes.json();
+    let contactId = searchData?.[0]?.id;
+    if (!contactId) {
+    const createRes = await fetch(
+        "https://services.leadconnectorhq.com/contacts",
+        {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
+            Version: "2021-04-15",
+        },
+        body: JSON.stringify({
+            firstName: "Unknown",
+            phone: customerNumber,
+            email: extractedEmail || undefined,
+        }),
+        }
+    );
+
+    const createData = await createRes.json();
+    contactId = createData.id;
+    }
 
     // --- Call GHL appointments API ---
     const res = await fetch(
@@ -64,17 +105,15 @@ export async function POST(req: Request) {
             Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
             'Version': '2021-04-15',
         },
-        body: JSON.stringify({
-          calendarId: process.env.GHL_CALENDAR_ID,
-          locationId: "VRejswos7T1F1YAC8P1t",
-          startTime,
-          endTime,
-          title: "Scheduled via Vapi AI",
-          appointmentStatus: "confirmed",
-          contact: {
-            phone: customerNumber,
-            email: extractedEmail,
-          },
+          body: JSON.stringify({        
+            "title": "Scheduled via Vapi AI",
+            "appointmentStatus": "confirmed",
+            "address": "Zoom",
+            "calendarId": process.env.GHL_CALENDAR_ID,
+            "locationId": "VRejswos7T1F1YAC8P1t",
+            "contactId": contactId,
+            "startTime": startTime,
+            "endTime": endTime
         }),
       }
     );
