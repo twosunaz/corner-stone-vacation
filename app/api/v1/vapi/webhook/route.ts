@@ -56,9 +56,10 @@ export async function POST(req: Request) {
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
+            'Version': '2021-04-15',
         },
         body: JSON.stringify({
           calendarId: process.env.GHL_CALENDAR_ID,
