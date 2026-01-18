@@ -20,16 +20,17 @@ export async function GET() {
           Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
           Version: "2021-04-15",
         },
-        body: JSON.stringify({
-        title: "Scheduled via Vapi AI",
-        appointmentStatus: "confirmed",
-        ignoreFreeSlotValidation: true ,// <-- bypasses the slot check
-        address: "Zoom",
-        calendarId: process.env.GHL_CALENDAR_ID,
-        locationId: "VRejswos7T1F1YAC8P1t",
-        contactId,
-        startTime,
-        endTime,
+          body: JSON.stringify({
+            title: "Scheduled via Vapi AI",
+            appointmentStatus: "confirmed",
+            ignoreFreeSlotValidation: true ,// <-- bypasses the slot check
+            address: "Zoom",
+            calendarId: process.env.GHL_CALENDAR_ID,
+            locationId: "VRejswos7T1F1YAC8P1t",
+            contactId,
+            startTime,
+            endTime,
+            assignedUserId: "0007BWpSzSwfiuSl0tR2",
     }),
       }
     );
