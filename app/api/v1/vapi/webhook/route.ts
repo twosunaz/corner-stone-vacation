@@ -42,8 +42,8 @@ export async function POST(req: Request) {
 
     console.log("⏰ Parsed start time:", parsedDate.toISOString());
 
-    const startTime = parsedDate.getTime(); // milliseconds since epoch
-    const endTime = startTime + 60 * 60 * 1000; // default 1-hour appointment
+    const startTime = parsedDate.toISOString();
+    const endTime = new Date(parsedDate.getTime() + 60 * 60 * 1000).toISOString(); // 1-hour appointment
 
     // Optional: extract email from transcript if available
     const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
