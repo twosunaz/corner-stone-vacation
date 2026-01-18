@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@vapi-ai/web": "^2.5.2",
+    "chrono-node": "^2.9.0",
     "next": "16.1.3",
     "react": "19.2.3",
     "react-dom": "19.2.3"

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import * as chrono from "chrono-node";
 
 export const runtime = "nodejs";
 
@@ -20,64 +21,70 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Missing customer number" }, { status: 400 });
     }
 
-    // --- Extract date/time from AI's transcript ---
-    const dateMatch = transcript.match(
-      /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+at\s+(\d{1,2}:\d{2}\s*(AM|PM|am|pm)?\s*CST|CDT)?/i
-    );
+    // --- Extract day + time + optional AM/PM + timezone from AI transcript ---
+    const dateTimeRegex = /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+at\s+([\d]{1,2}(?::\d{2})?|\w+(?:\s\w+)*)\s*(AM|PM|am|pm)?\s*(CST|CDT)?/i;
+    const match = transcript.match(dateTimeRegex);
 
-    if (!dateMatch) {
+    if (!match) {
       console.log("❌ No booking date found in transcript");
       return NextResponse.json({ success: false, message: "No booking date found" }, { status: 200 });
     }
 
-    const bookingDateStr = dateMatch[0];
-    console.log("📅 Extracted booking date from transcript:", bookingDateStr);
+    const [fullMatch, day, timeText, ampm, tz] = match;
+    console.log("📅 Extracted booking info:", { day, timeText, ampm, tz });
 
-    // TODO: convert bookingDateStr to ISO string or GHL-compatible datetime
-    const bookingDate = new Date(); // placeholder, replace with proper parsing
+    // --- Convert natural language time to Date ---
+    const parsedDate = chrono.parseDate(`${day} at ${timeText} ${ampm || ""} ${tz || ""}`);
+    if (!parsedDate) {
+      console.error("❌ Failed to parse booking date");
+      return NextResponse.json({ success: false, message: "Failed to parse booking date" }, { status: 500 });
+    }
 
-    // --- Use ghlApi helper to schedule the appointment ---
-    const ghlData = await fetch(
-    "https://services.leadconnectorhq.com/calendars",
-    {
+    console.log("⏰ Parsed start time:", parsedDate.toISOString());
+
+    const startTime = parsedDate.getTime(); // milliseconds since epoch
+    const endTime = startTime + 60 * 60 * 1000; // default 1-hour appointment
+
+    // Optional: extract email from transcript if available
+    const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
+    const emailMatch = transcript.match(emailRegex);
+    const extractedEmail = emailMatch ? emailMatch[0] : undefined;
+
+    // --- Call GHL appointments API ---
+    const res = await fetch(
+      "https://services.leadconnectorhq.com/calendars/events/appointments",
+      {
         method: "POST",
         headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
-        Version: "2021-07-28", // REQUIRED
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
         },
         body: JSON.stringify({
-        name: "2026 Virtual Travel Showcase",
-        description: "AI-booked calls from Vapi assistant",
-        slug: "2026-virtual-travel-showcase",
-        isActive: true,
-        locationId: "VRejswos7T1F1YAC8P1t",
-        timezone: "America/Chicago",
+          calendarId: process.env.GHL_CALENDAR_ID,
+          locationId: "VRejswos7T1F1YAC8P1t",
+          startTime,
+          endTime,
+          title: "Scheduled via Vapi AI",
+          appointmentStatus: "confirmed",
+          contact: {
+            phone: customerNumber,
+            email: extractedEmail || undefined,
+          },
         }),
-    }
+      }
     );
 
-    const text = await ghlData.text();
-    console.log("ghldata: ", text);
-    let ghlJson = null;
-    if (text) {
-    try {
-        ghlJson = JSON.parse(text);
-    } catch (e) {
-        console.error("❌ GHL returned non-JSON:", text);
-    }
+    const text = await res.text();
+    if (!res.ok) {
+      console.error("❌ GHL raw response:", text);
+      throw new Error("Failed to book GHL appointment");
     }
 
-    if (!ghlData.ok) {
-    console.error("❌ GHL error:", ghlData.status, ghlJson || text);
-    throw new Error("Failed to book GHL calendar");
-    }
-
-
+    const ghlData = JSON.parse(text);
     console.log("✅ GHL appointment created:", ghlData);
 
-    return NextResponse.json({ success: true, bookingDate: bookingDateStr, ghlData });
+    return NextResponse.json({ success: true, bookingDate: parsedDate.toISOString(), ghlData });
   } catch (error) {
     console.error("❌ Webhook error:", error);
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
