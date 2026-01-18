@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { ghlApi } from "@/util/ghl/client";
 
 export const runtime = "nodejs";
 
@@ -38,15 +37,30 @@ export async function POST(req: Request) {
     const bookingDate = new Date(); // placeholder, replace with proper parsing
 
     // --- Use ghlApi helper to schedule the appointment ---
-    const ghlData = await ghlApi("appointments", {
-      method: "POST",
-      body: JSON.stringify({
-        contactPhone: customerNumber,
-        startDateTime: bookingDate.toISOString(),
-        serviceId: process.env.GHL_SERVICE_ID,
-        notes: "Scheduled via Vapi AI assistant",
-      }),
-    });
+    const ghlData = await fetch(
+    "https://services.leadconnectorhq.com/calendars",
+    {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
+        Version: "2021-07-28", // REQUIRED
+        },
+        body: JSON.stringify({
+        name: "2026 Virtual Travel Showcase",
+        description: "AI-booked calls from Vapi assistant",
+        slug: "2026-virtual-travel-showcase",
+        isActive: true,
+        locationId: "VRejswos7T1F1YAC8P1t",
+        timezone: "America/Chicago",
+        }),
+    }
+    );
+
+    const data = await ghlData.json();
+    console.log("✅ Calendar created:", data);
+
 
     console.log("✅ GHL appointment created:", ghlData);
 
