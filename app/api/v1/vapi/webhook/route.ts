@@ -58,8 +58,21 @@ export async function POST(req: Request) {
     }
     );
 
-    const data = await ghlData.json();
-    console.log("✅ Calendar created:", data);
+    const text = await ghlData.text();
+    console.log("ghldata: ", text);
+    let ghlJson = null;
+    if (text) {
+    try {
+        ghlJson = JSON.parse(text);
+    } catch (e) {
+        console.error("❌ GHL returned non-JSON:", text);
+    }
+    }
+
+    if (!ghlData.ok) {
+    console.error("❌ GHL error:", ghlData.status, ghlJson || text);
+    throw new Error("Failed to book GHL calendar");
+    }
 
 
     console.log("✅ GHL appointment created:", ghlData);
