@@ -34,7 +34,10 @@ export async function POST(req: Request) {
     console.log("📅 Extracted booking info:", { day, timeText, ampm, tz });
 
     // --- Convert natural language time to Date ---
-    const parsedDate = chrono.parseDate(`${day} at ${timeText} ${ampm || ""} ${tz || ""}`);
+    const timezone = tz || "MST"; // default to Mountain Standard Time
+    const cleanTimeText = timeText.replace(/[^0-9:apm\s]/gi, "").trim();
+    const parsedDate = chrono.parseDate(`${day} at ${cleanTimeText} ${ampm || ""} ${timezone}`);
+
     if (!parsedDate) {
       console.error("❌ Failed to parse booking date");
       return NextResponse.json({ success: false, message: "Failed to parse booking date" }, { status: 500 });
@@ -70,7 +73,7 @@ export async function POST(req: Request) {
           appointmentStatus: "confirmed",
           contact: {
             phone: customerNumber,
-            email: extractedEmail || customerNumber,
+            email: extractedEmail,
           },
         }),
       }
