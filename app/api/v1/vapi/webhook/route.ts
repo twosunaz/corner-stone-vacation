@@ -66,10 +66,26 @@ export async function POST(req: Request) {
           Version: "2021-07-28",
         },
         body: JSON.stringify({
-            email: extractedEmail, // optional
-            phone: customerNumber, // optional
             locationId: "VRejswos7T1F1YAC8P1t",
-            pageLimit: 20,
+            pageLimit: 1,
+            filters: [
+                {
+                    group: 'OR',
+                    filters: [
+                        {
+                            field: 'email',
+                            operator: 'eq',
+                            value: [extractedEmail]
+                        },
+                        {
+                            field: 'phone',
+                            operator: 'eq',
+                            value: [customerNumber]
+                        }
+                    ]
+
+                }
+            ]
         }),
       }
     );
