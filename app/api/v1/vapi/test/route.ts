@@ -80,6 +80,7 @@ export async function GET() {
         body: JSON.stringify({
             contactId: "tvrhYmELdqG1bEc3F6t4",
             pipelineId: "TwVBrfxOenOZAr5cVV40",
+            pipelineStageId: "cd49b825-ae8c-4c92-978f-3e05dc6c7c13",
             locationId: "VRejswos7T1F1YAC8P1t"
         }),
         });
