@@ -15,45 +15,22 @@ export async function POST(req: Request) {
     }
 
     const transcript: string = payload.message.artifact?.transcript || "";
-    const { email, phone, endedReason } = extractContactFromTranscript({
+    
+    const { email, phone, endedReason, bookingDate } = extractContactFromTranscript({
     transcript,
     phoneFromPayload: payload.message.customer?.number,
     endedReasonFromPayload: payload.message?.endedReason
     });
 
+    console.log("email: ", email);
+    console.log("phone: ", phone);
+    console.log("bookingDate: ", bookingDate);
     console.log("Extracted endedReason:", endedReason);
+
     if (!phone) {
       console.error("❌ Missing customer number");
       return NextResponse.json({ success: false, error: "Missing customer number" }, { status: 400 });
     }
-
-    // --- Robust extraction of booking date/time ---
-    const dateTimePatterns = [
-      // e.g. Monday at 1 PM MST
-      /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+at\s+([0-9]{1,2}(?::[0-9]{2})?|\w+(?:\s\w+)*)\s*(AM|PM|am|pm)?\s*(CST|CDT|MST)?/i,
-      // e.g. 3:30 PM MST on Monday
-      /\b([0-9]{1,2}(?::[0-9]{2})?|\w+(?:\s\w+)*)\s*(AM|PM|am|pm)?\s*(CST|CDT|MST)?\s+on\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)/i
-    ];
-
-    let parsedDate: Date | null = null;
-
-    for (const pattern of dateTimePatterns) {
-      const match = transcript.match(pattern);
-      if (match) {
-        // Use the matched string directly with chrono-node for parsing
-        parsedDate = chrono.parseDate(match[0]);
-        if (parsedDate) break;
-      }
-    }
-
-    // if (!parsedDate && endedReason === "customer-ended-call") {
-    //   console.log("❌ No booking date found in transcript");
-    //   return NextResponse.json({ success: false, message: "No booking date found" }, { status: 200 });
-    // }
-
-    console.log("⏰ Parsed start time:", parsedDate!.toISOString());
-    const startTime = parsedDate!.toISOString();
-    const endTime = new Date(parsedDate!.getTime() + 60 * 60 * 1000).toISOString(); // 1-hour appointment
 
     // --- Search for existing contact ---
     const searchRes = await fetch(
@@ -93,13 +70,14 @@ export async function POST(req: Request) {
 
     const searchData = await searchRes.json();
     console.log("Contact searchData: ", searchData);
-    console.log("email: ", email);
 
     let contactId = searchData?.contacts?.[0]?.id;
     console.log("ContactId from searchData", contactId);
-    console.log("endedReason: ", endedReason);
+
 
     if (endedReason === "voicemail" || endedReason === "no-answer") {
+        console.log(`📞 Call not answered (${endedReason}). Moving contact to No Answer SMS Nurture.`);
+
     // Move contact to "No Answer SMS Nurture"
     if (contactId) {
         await fetch("https://services.leadconnectorhq.com/opportunities/upsert", {
@@ -118,32 +96,18 @@ export async function POST(req: Request) {
             locationId: payload.message.locationId
         }),
         });
-    }
-    }
-
-    // --- Create contact if none found ---
-    if (!contactId) {
-      const createRes = await fetch(
-        "https://services.leadconnectorhq.com/contacts",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
-            Version: "2021-04-15",
-          },
-          body: JSON.stringify({
-            firstName: "Unknown",
-            phone: phone,
-            email: email || undefined,
-          }),
         }
-      );
-
-      const createData = await createRes.json();
-      contactId = createData.id;
+        return NextResponse.json({ success: true, message: "Contact moved to No Answer SMS Nurture"})
     }
+
+    // --- Handle confirmed booking ---
+    if (!bookingDate) {
+    console.log("❌ No booking time found. Skipping appointment creation.");
+    return NextResponse.json({ success: false, message: "No booking date found" });
+    }
+    // Now it's safe to create appointment
+    const startTime = bookingDate.toISOString();
+    const endTime = new Date(bookingDate.getTime() + 60 * 60 * 1000).toISOString();
 
     // --- Call GHL appointments API ---
     const res = await fetch(
@@ -180,7 +144,11 @@ export async function POST(req: Request) {
     const ghlData = JSON.parse(text);
     console.log("✅ GHL appointment created:", ghlData);
 
-    return NextResponse.json({ success: true, bookingDate: parsedDate!.toISOString(), ghlData });
+    return NextResponse.json({ 
+    success: true, 
+    bookingDate: bookingDate?.toISOString(), 
+    ghlData 
+    });
 
   } catch (error) {
     console.error("❌ Webhook error:", error);

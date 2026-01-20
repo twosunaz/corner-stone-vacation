@@ -1,3 +1,5 @@
+import * as chrono from "chrono-node";
+
 export function extractContactFromTranscript({
   transcript,
   phoneFromPayload,
@@ -39,5 +41,17 @@ export function extractContactFromTranscript({
   // --- endedReason ---
   const endedReason = endedReasonFromPayload || null;
 
-  return { email, phone, endedReason };
+  // --- Extract booking date/time from AI confirmation ---
+  // This assumes AI says something like:
+  // "You're all set for the presentation on Thursday at five PM Arizona time."
+  const bookingTimeRegex = /(?:all set for|scheduled for|appointment on)\s+([A-Za-z0-9: ,]+(?:AM|PM|am|pm)?(?:\s*[A-Z]{2,3})?)/i;
+  const bookingMatch = transcript.match(bookingTimeRegex);
+  let bookingDate: Date | null = null;
+
+  if (bookingMatch) {
+    // Use chrono-node to parse natural language date/time
+    bookingDate = chrono.parseDate(bookingMatch[1]);
+  }
+
+  return { email, phone, endedReason, bookingDate };
 }
