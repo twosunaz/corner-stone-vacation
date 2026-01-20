@@ -69,7 +69,7 @@ export async function GET() {
     //     }),
     //   }
     // );
-    const res = await fetch("https://services.leadconnectorhq.com/opportunities/upsert", {
+    const res =         await fetch("https://services.leadconnectorhq.com/opportunities/upsert", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -78,13 +78,13 @@ export async function GET() {
             Version: "2021-04-15",
         },
         body: JSON.stringify({
-            contactId,
+            contactId: "VJHDNpvwpCzGhTw5KmZY",
             pipelineId: "TwVBrfxOenOZAr5cVV40",
             stageId: "cd49b825-ae8c-4c92-978f-3e05dc6c7c13",
             title: "Missed call — follow-up required",
-            locationId: payload.message.locationId
+            locationId: "VRejswos7T1F1YAC8P1t"
         }),
-    });
+        });
     
     const text = await res.text();
     if (!res.ok) {
