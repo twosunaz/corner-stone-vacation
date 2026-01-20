@@ -91,6 +91,31 @@ export async function POST(req: Request) {
 
     let contactId = searchData?.contacts?.[0]?.id;
     console.log("ContactId from searchData", contactId);
+      
+    const endedReason = payload.message?.endedReason;
+    console.log("endedReason: ", endedReason);
+
+    if (endedReason === "voicemail" || endedReason === "no-answer") {
+    // Move contact to "No Answer SMS Nurture"
+    if (contactId) {
+        await fetch("https://services.leadconnectorhq.com/opportunities/upsert", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
+            Version: "2021-04-15",
+        },
+        body: JSON.stringify({
+            contactId,
+            pipelineId: "TwVBrfxOenOZAr5cVV40",
+            stageId: "cd49b825-ae8c-4c92-978f-3e05dc6c7c13",
+            title: "Missed call — follow-up required",
+            locationId: payload.message.locationId
+        }),
+        });
+    }
+    }
 
     // --- Create contact if none found ---
     if (!contactId) {
