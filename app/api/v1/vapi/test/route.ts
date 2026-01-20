@@ -89,11 +89,11 @@ export async function GET() {
     const text = await res.text();
     if (!res.ok) {
       console.error("❌ GHL raw response:", text);
-      throw new Error("Failed to book GHL appointment");
+      throw new Error("Failed to update opportunities");
     }
 
     const ghlData = JSON.parse(text);
-    console.log("✅ GHL appointment created:", ghlData);
+    console.log("✅ GHL opportunities updated:", ghlData);
 
     return NextResponse.json({ success: true, ghlData });
   } catch (error) {
