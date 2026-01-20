@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import * as chrono from "chrono-node";
-import { TranscriptDecoder } from "@/util/transcriptDecoder";
 
 export const runtime = "nodejs";
 
@@ -64,7 +63,7 @@ export async function POST(req: Request) {
           "Content-Type": "application/json",
           Accept: "application/json",
           Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
-          Version: "2021-04-15",
+          Version: "2021-07-28",
         },
         body: JSON.stringify({
           email: extractedEmail, // optional
@@ -74,6 +73,10 @@ export async function POST(req: Request) {
     );
 
     const searchData = await searchRes.json();
+    console.log("Contact searchData: ", searchData);
+    console.log("emailMatch: ", emailMatch);
+    console.log("extractedEmail: ", extractedEmail);
+
     let contactId = searchData?.[0]?.id;
 
     // --- Create contact if none found ---
@@ -112,16 +115,14 @@ export async function POST(req: Request) {
           Version: "2021-04-15",
         },
         body: JSON.stringify({
-            title: "Scheduled via Vapi AI",
-            appointmentStatus: "confirmed",
-            address: "Zoom",
-            ignoreFreeSlotValidation: true ,// <-- bypasses the slot check
-            calendarId: process.env.GHL_CALENDAR_ID,
-            locationId: "VRejswos7T1F1YAC8P1t",
-            contactId: contactId,
-            startTime: startTime,
-            endTime: endTime,
-            assignedUserId: "oSoFaxmr74kOo8jYNiBl",
+          title: "Scheduled via Vapi AI",
+          appointmentStatus: "confirmed",
+          address: "Zoom",
+          calendarId: process.env.GHL_CALENDAR_ID,
+          locationId: "VRejswos7T1F1YAC8P1t",
+          contactId: contactId,
+          startTime: startTime,
+          endTime: endTime
         }),
       }
     );
