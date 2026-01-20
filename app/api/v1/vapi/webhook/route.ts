@@ -31,7 +31,40 @@ export async function POST(req: Request) {
       console.error("❌ Missing customer number");
       return NextResponse.json({ success: false, error: "Missing customer number" }, { status: 400 });
     }
+    const filters: any[] = [];
 
+    if (email) {
+    filters.push({
+        field: "email",
+        operator: "eq",
+        value: [email],
+    });
+    }
+
+    if (phone) {
+    filters.push({
+        field: "phone",
+        operator: "eq",
+        value: [phone],
+    });
+    }
+
+    // If no filters at all, you probably want to skip searching
+    if (filters.length === 0) {
+    console.error("❌ No valid search filters (email or phone)");
+    return NextResponse.json({ success: false, error: "No contact info to search" }, { status: 400 });
+    }
+
+    const searchBody = {
+    locationId: "VRejswos7T1F1YAC8P1t",
+    pageLimit: 1,
+    filters: [
+        {
+        group: "OR",
+        filters,
+        },
+    ],
+    };
     // --- Search for existing contact ---
     const searchRes = await fetch(
       "https://services.leadconnectorhq.com/contacts/search",
@@ -43,28 +76,7 @@ export async function POST(req: Request) {
           Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
           Version: "2021-07-28",
         },
-        body: JSON.stringify({
-            locationId: "VRejswos7T1F1YAC8P1t",
-            pageLimit: 1,
-            filters: [
-                {
-                    group: 'OR',
-                    filters: [
-                        {
-                            field: 'email',
-                            operator: 'eq',
-                            value: [email]
-                        },
-                        {
-                            field: 'phone',
-                            operator: 'eq',
-                            value: [phone]
-                        }
-                    ]
-
-                }
-            ]
-        }),
+        body: JSON.stringify(searchBody),
       }
     );
 
