@@ -90,6 +90,7 @@ export async function POST(req: Request) {
     console.log("email: ", email);
 
     let contactId = searchData?.[0]?.id;
+    console.log("ContactId from searchData", contactId);
 
     // --- Create contact if none found ---
     if (!contactId) {
