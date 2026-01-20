@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import * as chrono from "chrono-node";
-
+import { extractContactFromTranscript } from "@/util/extractContactFromTranscript";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
@@ -14,9 +14,9 @@ export async function POST(req: Request) {
     }
 
     const transcript: string = payload.message.artifact?.transcript || "";
-    const customerNumber: string = payload.message.customer?.number;
+    const { email, phone } = extractContactFromTranscript({ transcript, phoneFromPayload: payload.message.customer?.number });
 
-    if (!customerNumber) {
+    if (!phone) {
       console.error("❌ Missing customer number");
       return NextResponse.json({ success: false, error: "Missing customer number" }, { status: 400 });
     }
@@ -49,11 +49,6 @@ export async function POST(req: Request) {
     const startTime = parsedDate.toISOString();
     const endTime = new Date(parsedDate.getTime() + 60 * 60 * 1000).toISOString(); // 1-hour appointment
 
-    // --- Extract email if available ---
-    const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
-    const emailMatch = transcript.match(emailRegex);
-    const extractedEmail = emailMatch ? emailMatch[0] : undefined;
-
     // --- Search for existing contact ---
     const searchRes = await fetch(
       "https://services.leadconnectorhq.com/contacts/search",
@@ -75,12 +70,12 @@ export async function POST(req: Request) {
                         {
                             field: 'email',
                             operator: 'eq',
-                            value: [extractedEmail]
+                            value: [email]
                         },
                         {
                             field: 'phone',
                             operator: 'eq',
-                            value: [customerNumber]
+                            value: [phone]
                         }
                     ]
 
@@ -92,8 +87,7 @@ export async function POST(req: Request) {
 
     const searchData = await searchRes.json();
     console.log("Contact searchData: ", searchData);
-    console.log("emailMatch: ", emailMatch);
-    console.log("extractedEmail: ", extractedEmail);
+    console.log("email: ", email);
 
     let contactId = searchData?.[0]?.id;
 
@@ -111,8 +105,8 @@ export async function POST(req: Request) {
           },
           body: JSON.stringify({
             firstName: "Unknown",
-            phone: customerNumber,
-            email: extractedEmail || undefined,
+            phone: phone,
+            email: email || undefined,
           }),
         }
       );
