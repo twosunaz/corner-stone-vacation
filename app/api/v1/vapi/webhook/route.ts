@@ -91,8 +91,6 @@ export async function POST(req: Request) {
         body: JSON.stringify({
             contactId,
             pipelineId: "TwVBrfxOenOZAr5cVV40",
-            stageId: "cd49b825-ae8c-4c92-978f-3e05dc6c7c13",
-            title: "Missed call — follow-up required",
             locationId: payload.message.locationId
             }),
         });
