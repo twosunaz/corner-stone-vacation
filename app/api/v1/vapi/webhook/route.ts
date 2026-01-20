@@ -80,7 +80,7 @@ export async function POST(req: Request) {
 
     // Move contact to "No Answer SMS Nurture"
     if (contactId) {
-        await fetch("https://services.leadconnectorhq.com/opportunities/upsert", {
+        const res = await fetch("https://services.leadconnectorhq.com/opportunities/upsert", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -94,9 +94,12 @@ export async function POST(req: Request) {
             stageId: "cd49b825-ae8c-4c92-978f-3e05dc6c7c13",
             title: "Missed call — follow-up required",
             locationId: payload.message.locationId
-        }),
+            }),
         });
-        }
+        
+        console.log("opportunities res: ", res);
+        
+    }
         return NextResponse.json({ success: true, message: "Contact moved to No Answer SMS Nurture"})
     }
 
