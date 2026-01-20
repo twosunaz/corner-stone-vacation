@@ -46,10 +46,10 @@ export async function POST(req: Request) {
       }
     }
 
-    if (!parsedDate && endedReason === "customer-ended-call") {
-      console.log("❌ No booking date found in transcript");
-      return NextResponse.json({ success: false, message: "No booking date found" }, { status: 200 });
-    }
+    // if (!parsedDate && endedReason === "customer-ended-call") {
+    //   console.log("❌ No booking date found in transcript");
+    //   return NextResponse.json({ success: false, message: "No booking date found" }, { status: 200 });
+    // }
 
     console.log("⏰ Parsed start time:", parsedDate!.toISOString());
     const startTime = parsedDate!.toISOString();
