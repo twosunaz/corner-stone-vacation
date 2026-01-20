@@ -89,7 +89,7 @@ export async function POST(req: Request) {
     console.log("Contact searchData: ", searchData);
     console.log("email: ", email);
 
-    let contactId = searchData?.[0]?.id;
+    let contactId = searchData?.contacts?.[0]?.id;
     console.log("ContactId from searchData", contactId);
 
     // --- Create contact if none found ---
@@ -128,14 +128,16 @@ export async function POST(req: Request) {
           Version: "2021-04-15",
         },
         body: JSON.stringify({
-          title: "Scheduled via Vapi AI",
-          appointmentStatus: "confirmed",
-          address: "Zoom",
-          calendarId: process.env.GHL_CALENDAR_ID,
-          locationId: "VRejswos7T1F1YAC8P1t",
-          contactId: contactId,
-          startTime: startTime,
-          endTime: endTime
+            title: "Scheduled via Vapi AI",
+            appointmentStatus: "confirmed",
+            ignoreFreeSlotValidation: true ,// <-- bypasses the slot check
+            address: "Zoom",
+            calendarId: process.env.GHL_CALENDAR_ID,
+            locationId: "VRejswos7T1F1YAC8P1t",
+            contactId,
+            startTime,
+            endTime,
+            assignedUserId: "oSoFaxmr74kOo8jYNiBl",
         }),
       }
     );
