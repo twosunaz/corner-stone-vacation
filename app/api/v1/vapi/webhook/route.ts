@@ -14,8 +14,13 @@ export async function POST(req: Request) {
     }
 
     const transcript: string = payload.message.artifact?.transcript || "";
-    const { email, phone } = extractContactFromTranscript({ transcript, phoneFromPayload: payload.message.customer?.number });
+    const { email, phone, endedReason } = extractContactFromTranscript({
+    transcript,
+    phoneFromPayload: payload.message.customer?.number,
+    endedReasonFromPayload: payload.message?.endedReason
+    });
 
+    console.log("Extracted endedReason:", endedReason);
     if (!phone) {
       console.error("❌ Missing customer number");
       return NextResponse.json({ success: false, error: "Missing customer number" }, { status: 400 });
@@ -91,8 +96,6 @@ export async function POST(req: Request) {
 
     let contactId = searchData?.contacts?.[0]?.id;
     console.log("ContactId from searchData", contactId);
-      
-    const endedReason = payload.message?.endedReason;
     console.log("endedReason: ", endedReason);
 
     if (endedReason === "voicemail" || endedReason === "no-answer") {
