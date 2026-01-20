@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import * as chrono from "chrono-node";
+import { TranscriptDecoder } from "@/util/transcriptDecoder";
 
 export const runtime = "nodejs";
 
@@ -111,14 +112,16 @@ export async function POST(req: Request) {
           Version: "2021-04-15",
         },
         body: JSON.stringify({
-          title: "Scheduled via Vapi AI",
-          appointmentStatus: "confirmed",
-          address: "Zoom",
-          calendarId: process.env.GHL_CALENDAR_ID,
-          locationId: "VRejswos7T1F1YAC8P1t",
-          contactId: contactId,
-          startTime: startTime,
-          endTime: endTime
+            title: "Scheduled via Vapi AI",
+            appointmentStatus: "confirmed",
+            address: "Zoom",
+            ignoreFreeSlotValidation: true ,// <-- bypasses the slot check
+            calendarId: process.env.GHL_CALENDAR_ID,
+            locationId: "VRejswos7T1F1YAC8P1t",
+            contactId: contactId,
+            startTime: startTime,
+            endTime: endTime,
+            assignedUserId: "oSoFaxmr74kOo8jYNiBl",
         }),
       }
     );

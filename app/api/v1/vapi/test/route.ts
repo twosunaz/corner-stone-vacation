@@ -4,6 +4,7 @@ export const runtime = "nodejs";
 
 export async function GET() {
   try {
+    
     // --- Hardcoded minimal info ---
     const contactId = "VJHDNpvwpCzGhTw5KmZY"; // test contactId in GHL
     const startTime = new Date("2026-01-19T03:30:00+05:30").toISOString();
