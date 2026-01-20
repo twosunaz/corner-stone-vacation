@@ -3,6 +3,7 @@ import * as chrono from "chrono-node";
 import { extractContactFromTranscript } from "@/util/extractContactFromTranscript";
 export const runtime = "nodejs";
 
+// TODO: fix AI Agent prompt to extract proper start time for appointment
 export async function POST(req: Request) {
   try {
     const payload = await req.json();
@@ -45,14 +46,14 @@ export async function POST(req: Request) {
       }
     }
 
-    if (!parsedDate) {
+    if (!parsedDate && endedReason === "customer-ended-call") {
       console.log("❌ No booking date found in transcript");
       return NextResponse.json({ success: false, message: "No booking date found" }, { status: 200 });
     }
 
-    console.log("⏰ Parsed start time:", parsedDate.toISOString());
-    const startTime = parsedDate.toISOString();
-    const endTime = new Date(parsedDate.getTime() + 60 * 60 * 1000).toISOString(); // 1-hour appointment
+    console.log("⏰ Parsed start time:", parsedDate!.toISOString());
+    const startTime = parsedDate!.toISOString();
+    const endTime = new Date(parsedDate!.getTime() + 60 * 60 * 1000).toISOString(); // 1-hour appointment
 
     // --- Search for existing contact ---
     const searchRes = await fetch(
@@ -179,7 +180,7 @@ export async function POST(req: Request) {
     const ghlData = JSON.parse(text);
     console.log("✅ GHL appointment created:", ghlData);
 
-    return NextResponse.json({ success: true, bookingDate: parsedDate.toISOString(), ghlData });
+    return NextResponse.json({ success: true, bookingDate: parsedDate!.toISOString(), ghlData });
 
   } catch (error) {
     console.error("❌ Webhook error:", error);

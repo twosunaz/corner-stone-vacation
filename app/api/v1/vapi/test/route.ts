@@ -35,40 +35,57 @@ export async function GET() {
     // }),
     //   }
     // );
-    const res = await fetch(
-      "https://services.leadconnectorhq.com/contacts/search",
-      {
+    // const res = await fetch(
+    //   "https://services.leadconnectorhq.com/contacts/search",
+    //   {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //       Accept: "application/json",
+    //       Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
+    //       Version: "2021-07-28",
+    //     },
+    //     body: JSON.stringify({
+    //         locationId: "VRejswos7T1F1YAC8P1t",
+    //         pageLimit: 1,
+    //         filters: [
+    //             {
+    //                 group: 'OR',
+    //                 filters: [
+    //                     {
+    //                         field: 'email',
+    //                         operator: 'eq',
+    //                         value: ["vibecommunitypublishing@gmail.com"]
+    //                     },
+    //                     {
+    //                         field: 'phone',
+    //                         operator: 'eq',
+    //                         value: ["+15204445252"]
+    //                     }
+    //                 ]
+
+    //             }
+    //         ]
+    //     }),
+    //   }
+    // );
+    const res = await fetch("https://services.leadconnectorhq.com/opportunities/upsert", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
-          Version: "2021-07-28",
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
+            Version: "2021-04-15",
         },
         body: JSON.stringify({
-            locationId: "VRejswos7T1F1YAC8P1t",
-            pageLimit: 1,
-            filters: [
-                {
-                    group: 'OR',
-                    filters: [
-                        {
-                            field: 'email',
-                            operator: 'eq',
-                            value: ["vibecommunitypublishing@gmail.com"]
-                        },
-                        {
-                            field: 'phone',
-                            operator: 'eq',
-                            value: ["+15204445252"]
-                        }
-                    ]
-
-                }
-            ]
+            contactId,
+            pipelineId: "TwVBrfxOenOZAr5cVV40",
+            stageId: "cd49b825-ae8c-4c92-978f-3e05dc6c7c13",
+            title: "Missed call — follow-up required",
+            locationId: payload.message.locationId
         }),
-      }
-    );
+    });
+    
     const text = await res.text();
     if (!res.ok) {
       console.error("❌ GHL raw response:", text);
