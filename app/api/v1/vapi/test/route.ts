@@ -69,13 +69,13 @@ export async function GET() {
     //     }),
     //   }
     // );
-    const res =         await fetch("https://services.leadconnectorhq.com/opportunities/upsert", {
+    const res = await fetch("https://services.leadconnectorhq.com/opportunities/upsert", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
             Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
-            Version: "2021-04-15",
+            Version: "2021-07-28",
         },
         body: JSON.stringify({
             contactId: "VJHDNpvwpCzGhTw5KmZY",

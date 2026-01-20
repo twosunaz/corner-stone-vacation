@@ -86,7 +86,7 @@ export async function POST(req: Request) {
             "Content-Type": "application/json",
             Accept: "application/json",
             Authorization: `Bearer ${process.env.GHL_PRIVATE_INTEGRATION}`,
-            Version: "2021-04-15",
+            Version: "2021-07-28",
         },
         body: JSON.stringify({
             contactId,
