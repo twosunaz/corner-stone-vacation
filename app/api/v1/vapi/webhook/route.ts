@@ -121,7 +121,7 @@ export async function POST(req: Request) {
     }
     // Now it's safe to create appointment
     const startTime = bookingDate.toISOString();
-    const endTime = new Date(bookingDate.getTime() + 60 * 60 * 1000).toISOString();
+    const endTime = new Date(bookingDate.getTime() + 45 * 60 * 1000).toISOString();
 
     // --- Call GHL appointments API ---
     const res = await fetch(
