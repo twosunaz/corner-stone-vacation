@@ -1,5 +1,21 @@
 import * as chrono from "chrono-node";
 
+const TIMEZONE_OFFSETS: Record<string, number> = {
+  "central time": -6,
+  "ct": -6,
+  "cst": -6,
+  "cst/cdt": -6,
+  "mountain time": -7,
+  "mt": -7,
+  "mst": -7,
+  "pacific time": -8,
+  "pt": -8,
+  "pst": -8,
+  "eastern time": -5,
+  "et": -5,
+  "est": -5,
+};
+
 export function extractContactFromTranscript({
   transcript,
   phoneFromPayload,
@@ -9,9 +25,11 @@ export function extractContactFromTranscript({
   phoneFromPayload?: string;
   endedReasonFromPayload?: string;
 }) {
-  // --- Normalize email (spoken or standard) ---
   let email: string | null = null;
+  let phone: string | null = null;
+  let bookingDate: Date | null = null;
 
+  // --- EMAIL ---
   const spokenEmailMatch = transcript.match(
     /([a-z0-9._%+-]+)\s*(?:at|@)\s*([a-z0-9.-]+)\s*(?:dot|\.)\s*([a-z]{2,})/i
   );
@@ -28,9 +46,7 @@ export function extractContactFromTranscript({
     }
   }
 
-  // --- Normalize phone ---
-  let phone: string | null = null;
-
+  // --- PHONE ---
   if (phoneFromPayload) {
     const cleaned = phoneFromPayload.replace(/[^\d+]/g, "");
     if (cleaned.startsWith("+") && cleaned.length >= 10) {
@@ -38,19 +54,42 @@ export function extractContactFromTranscript({
     }
   }
 
-  // --- endedReason ---
   const endedReason = endedReasonFromPayload || null;
 
-  // --- Extract booking date/time from AI confirmation ---
-  // This assumes AI says something like:
-  // "You're all set for the presentation on Thursday at five PM Arizona time."
-  const bookingTimeRegex = /(?:all set for|scheduled for|appointment on)\s+([A-Za-z0-9: ,]+(?:AM|PM|am|pm)?(?:\s*[A-Z]{2,3})?)/i;
-  const bookingMatch = transcript.match(bookingTimeRegex);
-  let bookingDate: Date | null = null;
+  // --- BOOKING TIME ---
+  // Example phrase:
+  // "You're all set for Wednesday at seven PM central time"
+  const bookingRegex =
+    /(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+at\s+([\w: ]+?(?:am|pm))\s+(central|mountain|pacific|eastern)\s*time/i;
 
-  if (bookingMatch) {
-    // Use chrono-node to parse natural language date/time
-    bookingDate = chrono.parseDate(bookingMatch[1]);
+  const match = transcript.match(bookingRegex);
+
+  if (match) {
+    const [, weekday, time, timezoneRaw] = match;
+
+    const timezoneKey = `${timezoneRaw.toLowerCase()} time`;
+    const tzOffset = TIMEZONE_OFFSETS[timezoneKey] ?? -6;
+
+    const naturalPhrase = `${weekday} at ${time}`;
+
+    const parsed = chrono.parseDate(naturalPhrase, new Date(), {
+      forwardDate: true,
+    });
+
+    if (parsed) {
+      // Convert parsed local time to UTC manually
+      const utcDate = new Date(
+        Date.UTC(
+          parsed.getFullYear(),
+          parsed.getMonth(),
+          parsed.getDate(),
+          parsed.getHours() - tzOffset,
+          parsed.getMinutes()
+        )
+      );
+
+      bookingDate = utcDate;
+    }
   }
 
   return { email, phone, endedReason, bookingDate };
