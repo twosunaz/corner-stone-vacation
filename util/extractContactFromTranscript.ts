@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+
 const WEEKDAYS: Record<string, number> = {
   sunday: 0,
   monday: 1,
@@ -40,11 +41,16 @@ const TIMEZONE_OFFSETS: Record<string, number> = {
 };
 
 /**
- * Returns the next occurrence of a weekday strictly in the future
+ * Returns the closest upcoming occurrence of a weekday
+ * (today included if still in the future)
  */
-function getNextWeekday(targetDay: number, from = new Date()): Date {
+function getClosestWeekday(targetDay: number, from: Date): Date {
   const date = new Date(from);
-  const diff = (targetDay + 7 - date.getDay()) % 7 || 7;
+  const currentDay = date.getDay();
+
+  let diff = targetDay - currentDay;
+  if (diff < 0) diff += 7;
+
   date.setDate(date.getDate() + diff);
   return date;
 }
@@ -53,14 +59,18 @@ export function extractContactFromTranscript({
   transcript,
   phoneFromPayload,
   endedReasonFromPayload,
+  callEndedAt,
 }: {
   transcript: string;
   phoneFromPayload?: string;
   endedReasonFromPayload?: string;
+  callEndedAt?: Date;
 }) {
   let email: string | null = null;
   let phone: string | null = null;
   let bookingDate: Date | null = null;
+
+  const anchorDate = callEndedAt ?? new Date();
 
   /* ---------------- EMAIL ---------------- */
 
@@ -110,7 +120,10 @@ export function extractContactFromTranscript({
     const tzOffset = TIMEZONE_OFFSETS[timezoneKey] ?? -6;
 
     /* ---- Resolve Date ---- */
-    const baseDate = getNextWeekday(WEEKDAYS[weekday]);
+    const baseDate = getClosestWeekday(
+      WEEKDAYS[weekday],
+      anchorDate
+    );
 
     /* ---- Parse Time ---- */
     const timeMatch = timeRaw.match(
@@ -136,6 +149,11 @@ export function extractContactFromTranscript({
           0
         )
       );
+
+      /* ---- Safety: ensure future ---- */
+      if (bookingDate <= anchorDate) {
+        bookingDate.setUTCDate(bookingDate.getUTCDate() + 7);
+      }
     }
   }
 

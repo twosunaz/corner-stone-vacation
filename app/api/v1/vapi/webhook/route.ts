@@ -16,11 +16,14 @@ export async function POST(req: Request) {
 
     const transcript: string = payload.message.artifact?.transcript || "";
     
-    const { email, phone, endedReason, bookingDate } = extractContactFromTranscript({
-    transcript,
-    phoneFromPayload: payload.message.customer?.number,
-    endedReasonFromPayload: payload.message?.endedReason
+    const { email, phone, endedReason, bookingDate } =
+    extractContactFromTranscript({
+        transcript,
+        phoneFromPayload: payload.message.customer?.number,
+        endedReasonFromPayload: payload.message.endedReason,
+        callEndedAt: new Date(payload.message.endedAt),
     });
+
 
     console.log("email: ", email);
     console.log("phone: ", phone);
