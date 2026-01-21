@@ -24,6 +24,14 @@ const NUMBER_WORDS: Record<string, number> = {
   eleven: 11,
   twelve: 12,
 };
+const MINUTE_WORDS: Record<string, number> = {
+  zero: 0,
+  fifteen: 15,
+  thirty: 30,
+  forty: 40,
+  fortyfive: 45,
+  forty_five: 45,
+};
 
 const TIMEZONE_OFFSETS: Record<string, number> = {
   "central time": -6,
@@ -107,8 +115,8 @@ export function extractContactFromTranscript({
    * Example phrase:
    * "You're all set for Wednesday at seven PM central time"
    */
-  const bookingRegex =
-    /(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+at\s+((?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)(?::\d{2})?\s*(?:am|pm))\s+(central|mountain|pacific|eastern)\s*time/i;
+const bookingRegex =
+  /(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+at\s+((?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)(?:\s+(?:fifteen|thirty|forty(?:\s?five)?))?\s*(?:am|pm))\s+(central|mountain|pacific|eastern)\s*time/i;
 
   const match = transcript.match(bookingRegex);
 
@@ -127,18 +135,18 @@ export function extractContactFromTranscript({
 
     /* ---- Parse Time ---- */
     const timeMatch = timeRaw.match(
-      /(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)(?::(\d{2}))?\s*(am|pm)/i
+      /(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)(?:\s+(fifteen|thirty|forty(?:\s?five)?))?\s*(am|pm)/i
     );
 
     if (timeMatch) {
       let hour = NUMBER_WORDS[timeMatch[1].toLowerCase()];
-      const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+      const minuteWord = timeMatch[2]?.toLowerCase().replace(" ", "");
+      const minutes = minuteWord ? MINUTE_WORDS[minuteWord] ?? 0 : 0;
       const meridian = timeMatch[3].toLowerCase();
 
       if (meridian === "pm" && hour !== 12) hour += 12;
       if (meridian === "am" && hour === 12) hour = 0;
 
-      /* ---- Convert to UTC ---- */
       bookingDate = new Date(
         Date.UTC(
           baseDate.getFullYear(),
@@ -150,11 +158,11 @@ export function extractContactFromTranscript({
         )
       );
 
-      /* ---- Safety: ensure future ---- */
       if (bookingDate <= anchorDate) {
         bookingDate.setUTCDate(bookingDate.getUTCDate() + 7);
       }
     }
+
   }
 
   return {
